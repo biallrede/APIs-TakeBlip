@@ -2,3 +2,4 @@ pyodbc
 uvicorn
 pandas
 fastapi
+psycopg2
