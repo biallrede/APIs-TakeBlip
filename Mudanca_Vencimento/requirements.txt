@@ -1,0 +1,7 @@
+fastapi
+pandas
+uvicorn 
+psycopg2
+pyodbc
+requests
+python-dotenv

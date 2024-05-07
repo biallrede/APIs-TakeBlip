@@ -1,7 +1,7 @@
 import pandas as pd 
 from credentials import credenciais_banco
 
-def consulta_cliente(cpf_cnpj,id_cliente_servico):
+def consulta_cliente(cpf_cnpj,id_cliente_servico_parametro):
     conn = credenciais_banco()   
     query = '''
                 select 
@@ -14,9 +14,9 @@ def consulta_cliente(cpf_cnpj,id_cliente_servico):
                 where  b.ativo = true
                 and d.cpf_cnpj = '{cpf_cnpj}'
                 and c.data_cancelamento isnull 
-                and a.id_cliente_servico = {id_cliente_servico}
+                and a.id_cliente_servico = {id_cliente_servico_valor}
 
-                    '''.format(cpf_cnpj=cpf_cnpj,id_cliente_servico=id_cliente_servico)
+                    '''.format(cpf_cnpj=cpf_cnpj,id_cliente_servico_valor=id_cliente_servico_parametro)
         
     df = pd.read_sql(query,conn)
     return df
