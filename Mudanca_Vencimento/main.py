@@ -10,38 +10,61 @@ app = FastAPI() # criando uma instância da classe FastAPI
 @app.get("/apto_mudanca/{id_cliente_servico}/{id_cliente}") 
 def verifica_apto_mudanca(id_cliente_servico,id_cliente):
     data_hoje = datetime.today().strftime('%Y-%m-%d')
-    # status_servico = pd.DataFrame(consulta_servico_habilitado(id_cliente_servico))
-    # status_cobranca = pd.DataFrame(consulta_cobranca_vencida(id_cliente_servico,data_hoje))
-    # if status_cobranca.empty and (status_servico['prefixo'] == 'servico_habilitado').any():
-    #     datas_vencimento, dados_rota = datas_vencimentos_possiveis(id_cliente)
-    #     print(dados_rota)
-    datas_vencimento, dados_rota = datas_vencimentos_possiveis(id_cliente_servico)
-    print(dados_rota)
-    if 1==1:
-        resposta = {
-        "status": "success",
-        "msg": "Apto a mudança de vencimento",
-        "grupos": "25/04/2023"  # Aqui incluímos os dados do grupo
-        }
-        return resposta
-    else:
-        return 'nao_apto'
-
-
-def executa_mudanca(id_cliente_servico):
-    data_hoje = datetime.today().strftime('%Y-%m-%d')
     status_servico = pd.DataFrame(consulta_servico_habilitado(id_cliente_servico))
     status_cobranca = pd.DataFrame(consulta_cobranca_vencida(id_cliente_servico,data_hoje))
     if status_cobranca.empty and (status_servico['prefixo'] == 'servico_habilitado').any():
-        return 'apto'
+        datas_vencimento = datas_vencimentos_possiveis(id_cliente)
+        resposta = {
+        "status": "success",
+        "msg": "Não apto para mudança de vencimento",
+        "datas": datas_vencimento
+        }
+        return  resposta
     else:
-        return 'nao_apto'
+        resposta = {
+        "status": "success",
+        "msg": "Não apto para mudança de vencimento",
+        }
+        return resposta
+
+
+@app.get("/executa_mudanca/{id_cliente_servico}/{data_mudanca}") 
+def executa_mudanca_definitivo(id_cliente_servico,data_mudanca):
+    dados_rota = gera_dados_rota(id_cliente_servico,int(data_mudanca))
+    resposta = executa_mudanca(id_cliente_servico, dados_rota)
+    if resposta.status_code == 200:
+        resposta = {
+        "status": "success",
+        "msg": "Data de vencimento alterada com sucesso.",
+        }
+        return resposta
+    else:
+        resposta = {
+        "status": "success",
+        "msg": "Não foi possível alterar a data de vencimento.",
+        }
+        return resposta
+
+def executa_mudanca(id_cliente_servico, dados_rota):  
+    url = "https://api.testeallrede.hubsoft.com.br/api/v1/cliente/servico/1624"
+    payload = json.dumps(dados_rota)
+    token = os.getenv("TOKEN_TESTE")
+    headers = {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer {token}'.format(token=token),
+    'Cookie': 'hubsoft_session=nQmzXkwJCg8g2Fk3Y8mQl8KcY6bAuOCAksLD5Rhg'
+    }
+    response = requests.request("PUT", url, headers=headers, data=payload)
+    resposta = ''
+    # if response.status_code == 200:
+    #     resposta = {
+    #         "status": "success",
+    #         "msg": "Data de vencimento alterada com sucesso.",
+    #     }
+    # else:
+    #     resposta = {
+    #     "status": "success",
+    #     "msg": "Não foi possível alterar a data de vencimento.",
+    #     }
     
-    # resposta = {
-    # "status": "success",
-    # "msg": "Dados consultados com sucesso",
-    # "grupos": grupo  # Aqui incluímos os dados do grupo
-    # }
-    
-    # # grupos_cliente_json = grupos_cliente.to_json(orient='records')
-    # return resposta
+    return response

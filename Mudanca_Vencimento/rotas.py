@@ -5,32 +5,46 @@ import json
 
 def datas_vencimentos_possiveis(id_cliente):
     load_dotenv()
-    print("entrei na rota")
+   
     # Defina o token de autenticação Bearer
     token = os.getenv("TOKEN_TESTE")
 
     # Defina a URL da rota
     url = "https://api.testeallrede.hubsoft.com.br/api/v1/cliente/servico/{id_cliente}/edit".format(id_cliente=id_cliente)
-    print("montei a url: ",url)
+   
     # Defina o cabeçalho de autenticação
     headers = {"Authorization": f"Bearer {token}"}
-    print("monetei o bearer token: ",token)
+  
 
     # Faça a solicitação GET
-    print("preparando a requisição")
+ 
     response = requests.get(url, headers=headers)
-    print("requisição feita")
+  
 
     # Verifique se a solicitação foi bem-sucedida (código de status 200)
     if response.status_code == 200:
         # Obtenha o conteúdo da resposta como JSON
-        print("lendo json")
+       
         dados = response.json()
 
         # Extrair as datas de vencimento
         datas_vencimento = [vencimento["dia_vencimento"] for vencimento in dados.get("vencimentos", [])]
+
+        return datas_vencimento
+    else:
+        return response.status_code
+    
+
+def gera_dados_rota(id_cliente,data_mudanca):
+    load_dotenv()
+    # Defina o token de autenticação Bearer
+    token = os.getenv("TOKEN_TESTE")
+    url = "https://api.testeallrede.hubsoft.com.br/api/v1/cliente/servico/{id_cliente}/edit".format(id_cliente=id_cliente)
+    headers = {"Authorization": f"Bearer {token}"}
+    response = requests.get(url, headers=headers)
+    if response.status_code == 200:
+        dados = response.json()
         servicos = dados.get("servicos", [])
-        # print(servicos)
         id_servico = ''
         id_cliente_servico = ''
         id_servico_status = ''
@@ -44,15 +58,20 @@ def datas_vencimentos_possiveis(id_cliente):
         tipo_cobranca = ''
         tipo_cobranca = ''
         validade = ''
-        # print('aquiiiiiiiiiiiiiiiiiiiiiiii')
-        # print(servicos)
+        id_vencimento_encontrado = 0
+        for venc in dados["vencimentos"]:
+            valor = venc["dia_vencimento"]
+            if valor == data_mudanca:
+                id_vencimento_encontrado = venc["id_vencimento"]
+                break  # Encerra o loop após encontrar o vencimento
+            # Se o vencimento não for encontrado, você pode lidar com isso aqui fora do loop
+            else:
+                print("Vencimento não encontrado.")
         for servico in servicos:
-            # print('entreiiiiiiii')
             id_servico = servico.get("id_servico")
-            # print("id_servicoooooo: ",id_servico)
             id_cliente_servico = servico.get("id_cliente_servico")
             id_servico_status = servico.get("id_servico_status")
-            id_vencimento = servico.get("id_vencimento")
+            id_vencimento = id_vencimento_encontrado
             valor = servico.get("valor")
             data_venda = servico.get("data_venda")
             data_venda = data_venda.replace("'",'"')
@@ -62,12 +81,12 @@ def datas_vencimentos_possiveis(id_cliente):
             tipo_cobranca = servico.get("tipo_cobranca")
             tipo_cobranca = tipo_cobranca.replace("'",'"')
             validade = servico.get("validade")
-        forma_cobranca = dados.get("formas_cobranca", {})
-        forma_cobranca_json = json.dumps(forma_cobranca)
-        forma_cobranca_json = forma_cobranca_json.replace("'",'"')
-        servico_tecnologia = dados.get("servico_tecnologia", {})
-        servico_tecnologia_json = json.dumps(servico_tecnologia)
-        servico_tecnologia_json = servico_tecnologia_json.replace("'",'"')
+        forma_cobranca = dados.get("formas_cobranca")
+        forma_cobranca_dict = forma_cobranca[0] if isinstance(forma_cobranca, list) and forma_cobranca else {}
+        servico_tecnologia = dados.get("servico_tecnologia")
+        servico_tecnologia_dict = servico_tecnologia[0] if isinstance(servico_tecnologia, list) and servico_tecnologia else {}
+        grupos = dados.get("grupos", [])
+        grupos_json = json.dumps(grupos).replace("'", '"')
         dados_rota = {
             "id_servico": id_servico,
             "id_cliente_servico": id_cliente_servico,
@@ -80,17 +99,10 @@ def datas_vencimentos_possiveis(id_cliente):
             "carne": carne,
             "tipo_cobranca": tipo_cobranca,
             "validade": validade,
-            "forma_cobranca": forma_cobranca,
-            "servico_tecnologia": servico_tecnologia
+            "forma_cobranca": forma_cobranca_dict,
+            "servico_tecnologia": servico_tecnologia_dict,
+            "grupos":grupos
         }
-
-        dados_rota = json.dumps(dados_rota)
-        # Exibir as datas de vencimento
-        # print("Datas de Vencimento:")
-        # for data in datas_vencimento:
-        #     print(data)
-
-        return datas_vencimento,dados_rota
+        return dados_rota
     else:
-        print("Falha na solicitação. Código de status:", response.status_code)
-
+        return response.status_code
