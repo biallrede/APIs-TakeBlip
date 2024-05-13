@@ -7,13 +7,13 @@ import os
 
 app = FastAPI() # criando uma instância da classe FastAPI
 
-@app.get("/apto_mudanca/{id_cliente_servico}/{id_cliente}") 
-def verifica_apto_mudanca(id_cliente_servico,id_cliente):
+@app.get("/apto_mudanca/{id_cliente_servico}") 
+def verifica_apto_mudanca(id_cliente_servico):
     data_hoje = datetime.today().strftime('%Y-%m-%d')
     status_servico = pd.DataFrame(consulta_servico_habilitado(id_cliente_servico))
     status_cobranca = pd.DataFrame(consulta_cobranca_vencida(id_cliente_servico,data_hoje))
     if status_cobranca.empty and (status_servico['prefixo'] == 'servico_habilitado').any():
-        datas_vencimento = datas_vencimentos_possiveis(id_cliente)
+        datas_vencimento = datas_vencimentos_possiveis(id_cliente_servico)
         resposta = {
         "status": "success",
         "msg": "Não apto para mudança de vencimento",
@@ -46,7 +46,7 @@ def executa_mudanca_definitivo(id_cliente_servico,data_mudanca):
         return resposta
 
 def executa_mudanca(id_cliente_servico, dados_rota):  
-    url = "https://api.testeallrede.hubsoft.com.br/api/v1/cliente/servico/1624"
+    url = "https://api.testeallrede.hubsoft.com.br/api/v1/cliente/servico/{id_cliente_servico}".format(id_cliente_servico=id_cliente_servico)
     payload = json.dumps(dados_rota)
     token = os.getenv("TOKEN_TESTE")
     headers = {
