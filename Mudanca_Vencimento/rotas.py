@@ -29,6 +29,7 @@ def datas_vencimentos_possiveis(id_cliente):
 
         # Extrair as datas de vencimento
         datas_vencimento = [vencimento["dia_vencimento"] for vencimento in dados.get("vencimentos", [])]
+        datas_vencimento = datas_vencimento.remove(5,10,15,20,25)
 
         return datas_vencimento
     else:
@@ -106,3 +107,88 @@ def gera_dados_rota(id_cliente,data_mudanca):
         return dados_rota
     else:
         return response.status_code
+    
+def gera_dados_atendimento(id_cliente_servico, data_mudanca):
+    load_dotenv()
+    # Defina o token de autenticação Bearer
+    token = os.getenv("TOKEN_TESTE")
+    url = "https://api.testeallrede.hubsoft.com.br/api/v1/atendimento/iniciar"
+    headers = {
+        'Content-Type': 'application/json',
+        "Authorization": f"Bearer {token}"}
+    payload = json.dumps({
+                "id_cliente_servico": f"{id_cliente_servico}"
+            })
+    
+    response = requests.post(url, headers=headers, data=payload)
+   
+    if response.status_code == 200:
+        dados = response.json()
+        id_atendimento = ''
+        id_cliente_servico = ''
+        descricao = ''
+        nome = ''
+        telefone = ''
+        email = ''
+        id_tipo_atendimento = ''
+        id_atendimento_status = ''
+        abrir_os = ''
+        nome_contato = ''
+        descricao_abertura = ''
+        telefone_contato =  ''
+        
+        cliente_servico = dados['atendimento']['cliente_servico']
+        nome = cliente_servico["cliente"]["nome_razaosocial"]
+        id_atendimento = dados['atendimento']['id_atendimento']
+        id_cliente_servico = dados['atendimento']["id_cliente_servico"]
+        descricao = "Aguardando Análise"
+        telefone = dados['atendimento']["telefone_contato"]
+        telefone_contato = telefone
+        email = dados['atendimento']["email_contato"]
+        id_tipo_atendimento = 4
+        id_atendimento_status = 2
+        abrir_os = "false"
+        nome_contato = dados['atendimento']["nome_contato"]
+        descricao_abertura = f'Mudança de data vencimento para o dia {data_mudanca}\n Cliente: {nome}\n ID Cliente Serviço: {id_cliente_servico}'
+
+        
+        dados_rota = {
+            "id_atendimento": id_atendimento,
+            "id_cliente_servico": id_cliente_servico,
+            "nome": nome,
+            "telefone": telefone,
+            "telefone_contato": telefone_contato,
+            "email": email,
+            "tipo_atendimento":{
+                "id_tipo_atendimento": id_tipo_atendimento,
+                "id_tipo_atendimento_pai": 'null', 
+                "descricao": "Mudança de data vencimento"
+            },
+            "atendimento_status":
+            {
+                "id_atendimento_status": id_atendimento_status, 
+                "descricao": descricao,
+                "prefixo": "aguardando_analise"
+            },
+            
+            "abrir_os": abrir_os,
+            "nome_contato": nome_contato,
+            "descricao_abertura": descricao_abertura,
+            "cliente_servico": cliente_servico,
+        }
+        return dados_rota
+    
+def abre_atendimento(dados):
+    load_dotenv()
+    # Defina o token de autenticação Bearer
+    token = os.getenv("TOKEN_TESTE")
+    url = "https://api.testeallrede.hubsoft.com.br/api/v1/atendimento"
+    dados_json = json.dumps(dados).replace("'", '"')
+    headers = {
+        'Content-Type': 'application/json',
+        "Authorization": f"Bearer {token}"}
+    
+    
+    response = requests.post(url, headers=headers, data=dados_json)
+   
+    return response.text

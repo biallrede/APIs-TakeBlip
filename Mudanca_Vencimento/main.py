@@ -1,9 +1,10 @@
 import pandas as pd
 from fastapi import FastAPI
 from query import *
-from datetime import datetime
+from datetime import datetime, timedelta
 from rotas import *
 import os
+
 
 app = FastAPI() # criando uma instância da classe FastAPI
 
@@ -17,7 +18,7 @@ def verifica_apto_mudanca(id_cliente_servico):
         resposta = {
         "status": "success",
         "msg": "Não apto para mudança de vencimento",
-        "datas": datas_vencimento
+        "datas": datas_vencimento 
         }
         return  resposta
     else:
@@ -32,6 +33,10 @@ def verifica_apto_mudanca(id_cliente_servico):
 def executa_mudanca_definitivo(id_cliente_servico,data_mudanca):
     dados_rota = gera_dados_rota(id_cliente_servico,int(data_mudanca))
     resposta = executa_mudanca(id_cliente_servico, dados_rota)
+    # data_atual = datetime.today()
+    # data_faturamento = data_atual - timedelta(days=20)
+    # if data_atual > data_faturamento:
+    #     abrir_atendimento(id_cliente_servico,data_mudanca)
     if resposta.status_code == 200:
         resposta = {
         "status": "success",
@@ -56,15 +61,21 @@ def executa_mudanca(id_cliente_servico, dados_rota):
     }
     response = requests.request("PUT", url, headers=headers, data=payload)
     resposta = ''
-    # if response.status_code == 200:
-    #     resposta = {
-    #         "status": "success",
-    #         "msg": "Data de vencimento alterada com sucesso.",
-    #     }
-    # else:
-    #     resposta = {
-    #     "status": "success",
-    #     "msg": "Não foi possível alterar a data de vencimento.",
-    #     }
+    if response.status_code == 200:
+        resposta = {
+            "status": "success",
+            "msg": "Data de vencimento alterada com sucesso.",
+        }
+    else:
+        resposta = {
+        "status": "success",
+        "msg": "Não foi possível alterar a data de vencimento.",
+        }
     
-    return response
+    return resposta
+
+@app.get("/abre_atendimento/{id_cliente_servico}") 
+def abrir_atendimento(id_cliente_servico,data_mudanca):
+    dados = gera_dados_atendimento(id_cliente_servico, data_mudanca)
+    status = abre_atendimento(dados)
+    return status
